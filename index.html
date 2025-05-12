@@ -1,0 +1,1815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decentralized Energy Trading</title>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <style>
+        :root {
+            --primary: #3498db;
+            --primary-dark: #2980b9;
+            --secondary: #2ecc71;
+            --secondary-dark: #27ae60;
+            --accent: #f39c12;
+            --accent-dark: #e67e22;
+            --seller: #17a2b8;
+            --seller-dark: #138496;
+            --buyer: #dc3545;
+            --buyer-dark: #c82333;
+            --light: #f8f9fa;
+            --dark: #343a40;
+            --border: #dee2e6;
+        }
+        
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: #f0f2f5; 
+            padding: 20px;
+            color: var(--dark);
+            line-height: 1.5;
+        }
+        
+        .container { 
+            max-width: 800px; 
+            margin: auto; 
+            background: white; 
+            padding: 30px; 
+            border-radius: 15px; 
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        h1 { 
+            color: var(--primary);
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+        
+        h2, h3 { 
+            text-align: center; 
+            color: var(--dark);
+            margin-top: 25px;
+            margin-bottom: 20px;
+        }
+        
+        .account-info {
+            background-color: var(--light);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            border-left: 5px solid var(--primary);
+        }
+        
+        .balance {
+            font-weight: bold;
+            color: var(--accent);
+        }
+        
+        .balance-change {
+            font-weight: bold;
+            animation: fadeHighlight 2s ease-out;
+            padding: 3px 8px;
+            border-radius: 5px;
+            margin-left: 5px;
+            display: inline-block;
+        }
+        
+        .balance-increase {
+            background-color: rgba(46, 204, 113, 0.2);
+            color: #27ae60;
+        }
+        
+        .balance-decrease {
+            background-color: rgba(231, 76, 60, 0.2);
+            color: #c0392b;
+        }
+        
+        @keyframes fadeHighlight {
+            0% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        
+        .role {
+            font-weight: bold;
+        }
+        
+        .input-group { 
+            margin-bottom: 20px; 
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        
+        input, button { 
+            width: 100%; 
+            padding: 12px; 
+            margin-top: 8px; 
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            font-size: 16px;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+        
+        button { 
+            background-color: var(--secondary); 
+            color: white; 
+            border: none; 
+            cursor: pointer; 
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-bottom: 10px;
+        }
+        
+        button:hover { 
+            background-color: var(--secondary-dark); 
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .listing { 
+            border: 1px solid var(--border); 
+            padding: 20px; 
+            margin-top: 15px; 
+            border-radius: 10px;
+            background-color: var(--light);
+            transition: all 0.3s ease;
+        }
+        
+        .listing:hover {
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transform: translateY(-3px);
+        }
+        
+        .menu { 
+            display: flex; 
+            justify-content: space-around; 
+            margin-bottom: 25px; 
+        }
+        
+        .menu button { 
+            width: 48%;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+        
+        .menu button::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 0;
+            bottom: 0;
+            left: 0;
+            background-color: rgba(0, 0, 0, 0.1);
+            transition: height 0.3s ease;
+            z-index: -1;
+        }
+        
+        .menu button:hover::before {
+            height: 100%;
+        }
+        
+        .role-btn { margin-bottom: 15px; }
+        .seller-btn { background-color: var(--seller); }
+        .seller-btn:hover { background-color: var(--seller-dark); }
+        .buyer-btn { background-color: var(--buyer); }
+        .buyer-btn:hover { background-color: var(--buyer-dark); }
+        .claim-btn { 
+            background-color: var(--primary); 
+            margin-bottom: 20px;
+            font-size: 18px;
+            padding: 15px;
+        }
+        .claim-btn:hover { background-color: var(--primary-dark); }
+        
+        .register-section { 
+            margin-bottom: 30px; 
+            padding-bottom: 30px; 
+            border-bottom: 2px solid var(--border);
+            background-color: rgba(52, 152, 219, 0.05);
+            padding: 25px;
+            border-radius: 15px;
+        }
+        
+        .buy-button {
+            background-color: var(--accent);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: none;
+            margin-top: 10px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .buy-button:hover {
+            background-color: var(--accent-dark);
+        }
+        
+        .switch-role-btn {
+            background-color: var(--dark);
+            color: white;
+            padding: 12px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .switch-role-btn:hover {
+            background-color: #23272b;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 28px;
+            }
+            
+            .menu button {
+                width: 47%;
+            }
+        }
+        
+        .purchase-form, .price-update-form {
+            background-color: rgba(0,0,0,0.03);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        
+        .transaction-history {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px dashed var(--border);
+        }
+        
+        .transaction-history h4 {
+            margin-bottom: 10px;
+            color: var(--dark);
+            font-size: 16px;
+        }
+        
+        .transaction-history ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        
+        .transaction-history li {
+            background-color: rgba(0,0,0,0.02);
+            padding: 8px 12px;
+            margin-bottom: 5px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        /* Style for input number */
+        input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        
+        input[type="number"]:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+        
+        /* Cost estimate styling */
+        #cost-estimate {
+            font-weight: bold;
+            color: var(--accent);
+        }
+        
+        /* Add styles for the enter button */
+        .enter-button {
+            background-color: var(--primary);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: none;
+            margin-top: 10px;
+            margin-bottom: 10px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            width: auto;
+            display: inline-block;
+        }
+        
+        .enter-button:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .wallet-info {
+            background-color: var(--light);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 5px solid var(--primary);
+        }
+        
+        .seller-wallet {
+            border-left: 5px solid var(--seller);
+        }
+        
+        .buyer-wallet {
+            border-left: 5px solid var(--buyer);
+        }
+        
+        .listing-expiry {
+            font-size: 14px;
+            margin-top: 5px;
+            color: #6c757d;
+        }
+        
+        .listing-expiry.expiring-soon {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        
+        .expired-listing {
+            opacity: 0.6;
+            background-color: #f8d7da;
+            position: relative;
+        }
+        
+        .expired-listing::after {
+            content: 'EXPIRED';
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #e74c3c;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        
+        .timer-container {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+        }
+        
+        .timer-icon {
+            margin-right: 8px;
+            color: #6c757d;
+        }
+        
+        .refreshed-listing {
+            animation: highlight-listing 2s ease-out;
+        }
+        
+        @keyframes highlight-listing {
+            0% { background-color: rgba(46, 204, 113, 0.3); }
+            100% { background-color: var(--light); }
+        }
+        
+        .own-listing {
+            border: 2px solid var(--primary);
+            background-color: rgba(52, 152, 219, 0.05);
+        }
+        
+        .other-seller-listing {
+            border: 2px solid var(--accent);
+            background-color: rgba(243, 156, 18, 0.05);
+        }
+        
+        .market-listings-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Decentralized Energy Trading</h1>
+        </div>
+        
+        <div class="account-info">
+            <p id="account">Connecting to wallet...</p>
+            <p>Your Balance: <span id="balance" class="balance">0</span> ETH <span id="balance-change" class="balance-change" style="display: none;"></span></p>
+            <p>Your Role: <span id="role-display" class="role">Not registered</span></p>
+        </div>
+        
+        <div id="register-section" class="register-section">
+            <h2>Register Your Role</h2>
+            <button id="claim-btn" class="claim-btn" onclick="claimTestETH()">Claim Test ETH</button>
+            <div class="menu">
+                <button class="seller-btn role-btn" onclick="registerAsSeller()">Register as Seller</button>
+                <button class="buyer-btn role-btn" onclick="registerAsBuyer()">Register as Buyer</button>
+            </div>
+        </div>
+        
+        <div id="trading-interface" style="display: none;">
+            <button id="switch-role-btn" class="switch-role-btn" onclick="switchRole()">Switch to Buyer/Seller Role</button>
+            
+            <div class="menu">
+                <button id="seller-panel-btn" onclick="showSellerSide()">Seller Panel</button>
+                <button id="buyer-panel-btn" onclick="showBuyerSide()">Buyer Panel</button>
+            </div>
+            
+            <div id="seller-section" style="display: none;">
+                <div class="wallet-info seller-wallet">
+                    <h3>Seller Wallet</h3>
+                    <p>Address: <span id="seller-address">-</span></p>
+                    <p>Balance: <span id="seller-balance" class="balance">0</span> ETH</p>
+                </div>
+                
+                <h2>List Energy for Sale</h2>
+                <div class="input-group">
+                    <label for="energyAmount">Energy Amount (Wh)</label>
+                    <input type="number" id="energyAmount" placeholder="Enter energy amount">
+                    
+                    <label for="price">Price per kWh (milliETH)</label>
+                    <input type="number" id="price" placeholder="Enter price">
+                    
+                    <label for="listingExpiry">Listing Expiry (hours)</label>
+                    <input type="number" id="listingExpiry" placeholder="Enter hours until expiry" value="24">
+                    
+                    <button onclick="listEnergy()">List Energy</button>
+                </div>
+                <div id="seller-listings">
+                    <h3>Your Energy Listings</h3>
+                    <div id="my-listings"></div>
+                </div>
+                
+                <div class="market-listings-section">
+                    <h3>All Available Listings</h3>
+                    <div id="all-listings"></div>
+                </div>
+            </div>
+            
+            <div id="buyer-section" style="display: none;">
+                <div class="wallet-info buyer-wallet">
+                    <h3>Buyer Wallet</h3>
+                    <p>Address: <span id="buyer-address">-</span></p>
+                    <p>Balance: <span id="buyer-balance" class="balance">0</span> ETH</p>
+                    <p>Energy Purchased: <span id="buyer-energy">0</span> Wh</p>
+                </div>
+                
+                <h2>Available Energy Listings</h2>
+                <div id="listings"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const CONTRACT_ADDRESS = "0x326A66052fdc3051345599162FE6202367458Ce0";
+        const ABI = [
+            {
+                "inputs": [],
+                "stateMutability": "nonpayable",
+                "type": "constructor"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "id",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "address",
+                        "name": "seller",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "energyAmountWh",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "pricePerWhWei",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "EnergyListed",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "id",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "address",
+                        "name": "buyer",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "energyAmountWh",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "totalCost",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "remainingBalance",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "EnergyPurchased",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "id",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "newPricePerWhWei",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "PriceUpdated",
+                "type": "event"
+            },
+            {
+                "inputs": [],
+                "name": "admin",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "_listingId",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_amountWh",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "buyEnergy",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "claimTestETH",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "energyListings",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "id",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "address payable",
+                        "name": "seller",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "energyAmountWh",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "pricePerWhWei",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "_listingId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "getTransactionHistory",
+                "outputs": [
+                    {
+                        "components": [
+                            {
+                                "internalType": "address",
+                                "name": "buyer",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "energyBoughtWh",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "amountPaid",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "remainingBalance",
+                                "type": "uint256"
+                            }
+                        ],
+                        "internalType": "struct EnergyTrading.Transaction[]",
+                        "name": "",
+                        "type": "tuple[]"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_user",
+                        "type": "address"
+                    }
+                ],
+                "name": "getUserBalance",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_user",
+                        "type": "address"
+                    }
+                ],
+                "name": "getUserEnergyUsage",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "_energyAmountWh",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_pricePerKWhMilliEther",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "listEnergy",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "listingCounter",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "_listingId",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_newPricePerKWhMilliEther",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "updatePrice",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "name": "userEnergyBalance",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "name": "userEnergyUsage",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            }
+        ];
+
+        let provider, signer, contract;
+        let userRole = 'none';
+        let currentAccount;
+        let sellerAccount;
+        let buyerAccount;
+        let isRegistered = false;
+        let listingTimers = {}; // To store timers for listing expiration
+        let userEnergy = 0; // Track energy purchased by buyer
+
+        async function connectWallet() {
+            if (window.ethereum) {
+                try {
+                    await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                    signer = provider.getSigner();
+                    currentAccount = await signer.getAddress();
+                    document.getElementById("account").innerText = "Connected: " + formatAddress(currentAccount);
+                    contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+                    
+                    // Check if we're on Sepolia
+                    const network = await provider.getNetwork();
+                    if (network.chainId !== 11155111) { // Sepolia chain ID
+                        alert("Please switch to Sepolia testnet in MetaMask");
+                        try {
+                            await window.ethereum.request({
+                                method: 'wallet_switchEthereumChain',
+                                params: [{ chainId: '0xaa36a7' }], // Sepolia chain ID in hex
+                            });
+                        } catch (error) {
+                            console.error("Failed to switch network:", error);
+                        }
+                    }
+                    
+                    fetchBalance();
+                    
+                    // Listen for account changes
+                    window.ethereum.on('accountsChanged', (accounts) => {
+                        location.reload();
+                    });
+                    
+                    // Listen for network changes
+                    window.ethereum.on('chainChanged', (chainId) => {
+                        location.reload();
+                    });
+                } catch (error) {
+                    console.error("Error connecting to MetaMask:", error);
+                    alert("Failed to connect to MetaMask: " + error.message);
+                }
+            } else {
+                alert("Please install MetaMask!");
+            }
+        }
+
+        async function fetchBalance() {
+            try {
+                const userBalance = await contract.getUserBalance(currentAccount);
+                document.getElementById("balance").innerText = parseFloat(ethers.utils.formatEther(userBalance)).toFixed(6);
+                
+                // Update role-specific wallet display
+                if (userRole === 'seller' && sellerAccount) {
+                    document.getElementById("seller-balance").innerText = parseFloat(ethers.utils.formatEther(userBalance)).toFixed(6);
+                    document.getElementById("seller-address").innerText = formatAddress(sellerAccount);
+                } else if (userRole === 'buyer' && buyerAccount) {
+                    document.getElementById("buyer-balance").innerText = parseFloat(ethers.utils.formatEther(userBalance)).toFixed(6);
+                    document.getElementById("buyer-address").innerText = formatAddress(buyerAccount);
+                    document.getElementById("buyer-energy").innerText = userEnergy;
+                }
+            } catch (error) {
+                console.error("Error fetching balance:", error);
+            }
+        }
+
+        async function registerAsSeller() {
+            if (!currentAccount) {
+                alert("Please connect your wallet first");
+                return;
+            }
+            
+            userRole = 'seller';
+            sellerAccount = currentAccount;
+            document.getElementById("role-display").innerText = "Seller";
+            document.getElementById("role-display").style.color = "#17a2b8";
+            document.getElementById("seller-address").innerText = formatAddress(sellerAccount);
+            
+            document.getElementById("register-section").style.display = "none";
+            document.getElementById("trading-interface").style.display = "block";
+            document.getElementById("switch-role-btn").textContent = "Switch to Buyer Role";
+            isRegistered = true;
+            showSellerSide();
+        }
+        
+        async function registerAsBuyer() {
+            if (!currentAccount) {
+                alert("Please connect your wallet first");
+                return;
+            }
+            
+            userRole = 'buyer';
+            buyerAccount = currentAccount;
+            document.getElementById("role-display").innerText = "Buyer";
+            document.getElementById("role-display").style.color = "#dc3545";
+            document.getElementById("buyer-address").innerText = formatAddress(buyerAccount);
+            
+            document.getElementById("register-section").style.display = "none";
+            document.getElementById("trading-interface").style.display = "block";
+            document.getElementById("switch-role-btn").textContent = "Switch to Seller Role";
+            isRegistered = true;
+            showBuyerSide();
+        }
+        
+        async function switchRole() {
+            if (!isRegistered) {
+                alert("Please register first by selecting a role");
+                return;
+            }
+            
+            if (userRole === 'seller') {
+                // Switch to buyer role
+                userRole = 'buyer';
+                buyerAccount = currentAccount;
+                document.getElementById("role-display").innerText = "Buyer";
+                document.getElementById("role-display").style.color = "#dc3545";
+                document.getElementById("switch-role-btn").textContent = "Switch to Seller Role";
+                document.getElementById("buyer-address").innerText = formatAddress(buyerAccount);
+                showBuyerSide();
+            } else {
+                // Switch to seller role
+                userRole = 'seller';
+                sellerAccount = currentAccount;
+                document.getElementById("role-display").innerText = "Seller";
+                document.getElementById("role-display").style.color = "#17a2b8";
+                document.getElementById("switch-role-btn").textContent = "Switch to Buyer Role";
+                document.getElementById("seller-address").innerText = formatAddress(sellerAccount);
+                showSellerSide();
+            }
+            
+            // Update balance for the current role
+            fetchBalance();
+            
+            // Update button styles for active panel
+            updateActivePanel();
+        }
+        
+        function updateActivePanel() {
+            const sellerBtn = document.getElementById("seller-panel-btn");
+            const buyerBtn = document.getElementById("buyer-panel-btn");
+            
+            if (userRole === 'seller') {
+                sellerBtn.style.backgroundColor = "#2ecc71";
+                buyerBtn.style.backgroundColor = "#6c757d";
+            } else {
+                sellerBtn.style.backgroundColor = "#6c757d";
+                buyerBtn.style.backgroundColor = "#2ecc71";
+            }
+        }
+
+        async function fetchListings() {
+            const listingsElement = document.getElementById("listings");
+            const myListingsElement = document.getElementById("my-listings");
+            const allListingsElement = document.getElementById("all-listings");
+            
+            if (listingsElement) listingsElement.innerHTML = "";
+            if (myListingsElement) myListingsElement.innerHTML = "";
+            if (allListingsElement) allListingsElement.innerHTML = "";
+            
+            // Clear existing timers
+            clearListingTimers();
+            
+            try {
+                const listingCount = await contract.listingCounter();
+                let hasListings = false;
+                let hasMyListings = false;
+                let hasAllListings = false;
+                
+                // Current timestamp
+                const now = Math.floor(Date.now() / 1000);
+                
+                for (let i = 0; i < listingCount; i++) {
+                    const listing = await contract.energyListings(i);
+                    
+                    // Skip listings with zero energy left
+                    if (listing.energyAmountWh.toString() === "0") {
+                        continue;
+                    }
+                    
+                    // Get expiry timestamp - this would need to be added to your smart contract
+                    // For now, we'll simulate it with local storage
+                    let expiryTimestamp = localStorage.getItem(`listing-${i}-expiry`);
+                    if (!expiryTimestamp) {
+                        // Default to 24 hours from now if not set
+                        expiryTimestamp = now + 86400;
+                        localStorage.setItem(`listing-${i}-expiry`, expiryTimestamp);
+                    }
+                    
+                    // Skip expired listings
+                    const listingExpired = isExpired(expiryTimestamp);
+                    if (listingExpired) {
+                        continue;
+                    }
+                    
+                    // Convert price from Wei per Wh to milliETH per kWh for display
+                    const priceInWeiPerWh = listing.pricePerWhWei;
+                    const priceInWeiPerKwh = priceInWeiPerWh.mul(1000); // 1 kWh = 1000 Wh
+                    const priceInEthPerKwh = ethers.utils.formatEther(priceInWeiPerKwh);
+                    const priceInMilliEthPerKwh = parseFloat(priceInEthPerKwh) * 1000;
+                    
+                    const totalCost = ethers.utils.formatEther(
+                        listing.pricePerWhWei.mul(listing.energyAmountWh)
+                    );
+                    
+                    const isSeller = listing.seller.toLowerCase() === currentAccount.toLowerCase();
+                    
+                    // Show available listings to buyers
+                    if (userRole === 'buyer' && listingsElement) {
+                        hasListings = true;
+                        const listingDiv = document.createElement("div");
+                        listingDiv.classList.add("listing");
+                        listingDiv.id = `listing-${listing.id}`;
+                        
+                        // Highlight own listings but still show them
+                        if (isSeller) {
+                            listingDiv.classList.add("own-listing");
+                        }
+                        
+                        listingDiv.innerHTML = `
+                            <p><strong>Listing ID:</strong> ${listing.id}</p>
+                            <p><strong>Seller:</strong> ${formatAddress(listing.seller)}</p>
+                            <p><strong>Available Energy:</strong> ${listing.energyAmountWh} Wh</p>
+                            <p><strong>Price:</strong> ${priceInMilliEthPerKwh.toFixed(2)} milliETH per kWh</p>
+                            <p><strong>Total Cost (all):</strong> ${parseFloat(totalCost).toFixed(6)} ETH</p>
+                            
+                            <div class="timer-container">
+                                <i class="timer-icon">⏰</i>
+                                <div class="listing-expiry">
+                                    <span id="expiry-time-${listing.id}">Loading...</span>
+                                </div>
+                            </div>
+                            
+                            <div class="purchase-form">
+                                <label for="energy-amount-${listing.id}">Amount to buy (Wh):</label>
+                                <input 
+                                    type="number" 
+                                    id="energy-amount-${listing.id}" 
+                                    min="1" 
+                                    max="${listing.energyAmountWh}" 
+                                    value="${listing.energyAmountWh}"
+                                    oninput="updateCostEstimate(${listing.id}, ${listing.pricePerWhWei})"
+                                >
+                                <button class="enter-button" onclick="calculateCost(${listing.id})">Calculate Cost</button>
+                                <p>Estimated cost: <span id="cost-estimate-${listing.id}">${parseFloat(totalCost).toFixed(6)}</span> ETH</p>
+                                
+                                <button class="buy-button" onclick="buyEnergy(${listing.id})">
+                                    Buy Energy (ID: ${listing.id})
+                                </button>
+                            </div>
+                        `;
+                        listingsElement.appendChild(listingDiv);
+                        
+                        // Set up timer to update the expiry time
+                        setupExpiryTimer(listing.id, expiryTimestamp);
+                    }
+                    
+                    // Show seller's own listings in the seller section
+                    if (userRole === 'seller') {
+                        if (isSeller && myListingsElement) {
+                            // This is the seller's own listing
+                            hasMyListings = true;
+                            const listingDiv = document.createElement("div");
+                            listingDiv.classList.add("listing");
+                            listingDiv.id = `my-listing-${listing.id}`;
+                            
+                            // Fetch transaction history for this listing
+                            let transactionHistoryHtml = '<div class="transaction-history"><h4>Purchase History</h4>';
+                            try {
+                                const transactions = await contract.getTransactionHistory(listing.id);
+                                if (transactions.length === 0) {
+                                    transactionHistoryHtml += '<p>No purchases yet</p>';
+                                } else {
+                                    transactionHistoryHtml += '<ul>';
+                                    for (let tx of transactions) {
+                                        const buyerAddr = tx.buyer;
+                                        const energyAmount = tx.energyBoughtWh;
+                                        const amountPaid = ethers.utils.formatEther(tx.amountPaid);
+                                        
+                                        transactionHistoryHtml += `
+                                            <li>
+                                                <strong>Buyer:</strong> ${formatAddress(buyerAddr)} 
+                                                <strong>Amount:</strong> ${energyAmount} Wh 
+                                                <strong>Paid:</strong> ${parseFloat(amountPaid).toFixed(6)} ETH
+                                            </li>
+                                        `;
+                                    }
+                                    transactionHistoryHtml += '</ul>';
+                                }
+                            } catch (err) {
+                                console.error("Error fetching transaction history:", err);
+                                transactionHistoryHtml += '<p>Error loading transaction history</p>';
+                            }
+                            transactionHistoryHtml += '</div>';
+                            
+                            listingDiv.innerHTML = `
+                                <p><strong>Listing ID:</strong> ${listing.id}</p>
+                                <p><strong>Energy Amount:</strong> ${listing.energyAmountWh} Wh</p>
+                                <p><strong>Price:</strong> ${priceInMilliEthPerKwh.toFixed(2)} milliETH per kWh</p>
+                                <p><strong>Total Value:</strong> ${parseFloat(totalCost).toFixed(6)} ETH</p>
+                                
+                                <div class="timer-container">
+                                    <i class="timer-icon">⏰</i>
+                                    <div class="listing-expiry">
+                                        <span id="my-expiry-time-${listing.id}">Loading...</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="price-update-form">
+                                    <label for="new-price-${listing.id}">Update Price (milliETH/kWh):</label>
+                                    <input type="number" id="new-price-${listing.id}" min="1" placeholder="New price">
+                                    <button onclick="updatePrice(${listing.id})">Update Price</button>
+                                </div>
+                                
+                                <div class="extend-listing-form">
+                                    <label for="extend-hours-${listing.id}">Extend Listing (hours):</label>
+                                    <input type="number" id="extend-hours-${listing.id}" min="1" value="24">
+                                    <button onclick="extendListing(${listing.id})">Extend Listing</button>
+                                </div>
+                                
+                                ${transactionHistoryHtml}
+                            `;
+                            myListingsElement.appendChild(listingDiv);
+                            
+                            // Set up timer for the seller's view
+                            setupExpiryTimer(listing.id, expiryTimestamp, true);
+                        } else if (!isSeller && allListingsElement) {
+                            // This is another seller's listing
+                            hasAllListings = true;
+                            const listingDiv = document.createElement("div");
+                            listingDiv.classList.add("listing");
+                            listingDiv.classList.add("other-seller-listing");
+                            listingDiv.id = `all-listing-${listing.id}`;
+                            
+                            listingDiv.innerHTML = `
+                                <p><strong>Listing ID:</strong> ${listing.id}</p>
+                                <p><strong>Seller:</strong> ${formatAddress(listing.seller)}</p>
+                                <p><strong>Available Energy:</strong> ${listing.energyAmountWh} Wh</p>
+                                <p><strong>Price:</strong> ${priceInMilliEthPerKwh.toFixed(2)} milliETH per kWh</p>
+                                <p><strong>Total Value:</strong> ${parseFloat(totalCost).toFixed(6)} ETH</p>
+                                
+                                <div class="timer-container">
+                                    <i class="timer-icon">⏰</i>
+                                    <div class="listing-expiry">
+                                        <span id="all-expiry-time-${listing.id}">Loading...</span>
+                                    </div>
+                                </div>
+                            `;
+                            allListingsElement.appendChild(listingDiv);
+                            
+                            // Set up timer for all listings view
+                            setupExpiryTimer(listing.id, expiryTimestamp, false, "all");
+                        }
+                    }
+                }
+                
+                if (listingsElement && !hasListings && userRole === 'buyer') {
+                    listingsElement.innerHTML = "<p>No energy listings available</p>";
+                }
+                
+                if (myListingsElement && !hasMyListings && userRole === 'seller') {
+                    myListingsElement.innerHTML = "<p>You haven't listed any energy yet</p>";
+                }
+                
+                if (allListingsElement && !hasAllListings && userRole === 'seller') {
+                    allListingsElement.innerHTML = "<p>No other sellers have listed energy</p>";
+                }
+            } catch (error) {
+                console.error("Error fetching listings:", error);
+                if (listingsElement) {
+                    listingsElement.innerHTML = "<p>Error loading listings: " + error.message + "</p>";
+                }
+                if (myListingsElement) {
+                    myListingsElement.innerHTML = "<p>Error loading your listings: " + error.message + "</p>";
+                }
+                if (allListingsElement) {
+                    allListingsElement.innerHTML = "<p>Error loading market listings: " + error.message + "</p>";
+                }
+            }
+        }
+
+        async function listEnergy() {
+            if (userRole !== 'seller') {
+                alert("Only sellers can list energy for sale");
+                return;
+            }
+            
+            const energyAmount = document.getElementById("energyAmount").value;
+            const pricePerKwh = document.getElementById("price").value;
+            const expiryHours = document.getElementById("listingExpiry").value || 24;
+            
+            if (!energyAmount || !pricePerKwh) {
+                alert("Please enter both energy amount and price");
+                return;
+            }
+            
+            try {
+                const tx = await contract.listEnergy(energyAmount, pricePerKwh);
+                await tx.wait();
+                
+                // Get the new listing ID (we assume it's the counter - 1)
+                const listingCounter = await contract.listingCounter();
+                const newListingId = listingCounter.toNumber() - 1;
+                
+                // Store expiry time in local storage
+                const expiryTimestamp = Math.floor(Date.now() / 1000) + (expiryHours * 3600);
+                localStorage.setItem(`listing-${newListingId}-expiry`, expiryTimestamp);
+                
+                alert("Energy listed successfully for " + expiryHours + " hours!");
+                document.getElementById("energyAmount").value = "";
+                document.getElementById("price").value = "";
+                document.getElementById("listingExpiry").value = "24";
+                fetchListings();
+            } catch (error) {
+                console.error("Error listing energy:", error);
+                alert("Failed to list energy: " + error.message);
+            }
+        }
+
+        // Add function to extend listing expiry
+        function extendListing(listingId) {
+            const extendHoursInput = document.getElementById(`extend-hours-${listingId}`);
+            if (!extendHoursInput) {
+                alert("Error: Could not find extension input");
+                return;
+            }
+            
+            const extendHours = parseInt(extendHoursInput.value);
+            if (isNaN(extendHours) || extendHours <= 0) {
+                alert("Please enter a valid number of hours");
+                return;
+            }
+            
+            // Set new expiry time
+            const expiryTimestamp = Math.floor(Date.now() / 1000) + (extendHours * 3600);
+            localStorage.setItem(`listing-${listingId}-expiry`, expiryTimestamp);
+            
+            // Refresh listing display
+            fetchListings();
+            
+            alert(`Listing #${listingId} extended by ${extendHours} hours!`);
+        }
+
+        async function buyEnergy(id) {
+            try {
+                const listing = await contract.energyListings(id);
+                const seller = listing.seller;
+                const isSeller = seller.toLowerCase() === currentAccount.toLowerCase();
+                
+                // Show popup error if trying to buy own listing
+                if (isSeller) {
+                    alert("Error: You cannot buy your own energy listing. Please select a listing from another seller.");
+                    return;
+                }
+                
+                // Get the amount the user wants to buy
+                const amountInput = document.getElementById(`energy-amount-${id}`);
+                if (!amountInput) {
+                    alert("Error: Could not find amount input");
+                    return;
+                }
+                
+                const energyAmount = parseInt(amountInput.value);
+                if (isNaN(energyAmount) || energyAmount <= 0) {
+                    alert("Please enter a valid energy amount");
+                    return;
+                }
+                
+                if (energyAmount > listing.energyAmountWh) {
+                    alert(`You cannot buy more than the available amount (${listing.energyAmountWh} Wh)`);
+                    return;
+                }
+                
+                // Check if listing is expired
+                const expiryTimestamp = localStorage.getItem(`listing-${id}-expiry`);
+                if (expiryTimestamp && isExpired(expiryTimestamp)) {
+                    alert("This listing has expired and cannot be purchased");
+                    return;
+                }
+                
+                // Check if this is a partial purchase
+                const isPartialPurchase = energyAmount < listing.energyAmountWh;
+                const remainingEnergy = listing.energyAmountWh - energyAmount;
+                
+                // Calculate total cost
+                const totalCost = listing.pricePerWhWei.mul(energyAmount);
+                const formattedCost = ethers.utils.formatEther(totalCost);
+                
+                // Get user balance
+                const userBalance = await contract.getUserBalance(currentAccount);
+                
+                if (userBalance.lt(totalCost)) {
+                    alert(`Insufficient balance to buy this energy. You need ${formattedCost} ETH but only have ${ethers.utils.formatEther(userBalance)} ETH.`);
+                    return;
+                }
+                
+                // Ask for confirmation
+                let confirmationMessage = `Are you sure you want to buy this energy?\nListing ID: ${id}\nEnergy Amount: ${energyAmount} Wh\nTotal Cost: ${formattedCost} ETH`;
+                
+                if (isPartialPurchase) {
+                    confirmationMessage += `\n\nThis is a partial purchase. After this transaction, ${remainingEnergy} Wh will remain in the listing.`;
+                } else {
+                    confirmationMessage += `\n\nThis will purchase all available energy from this listing.`;
+                }
+                
+                confirmationMessage += `\n\nThis will open MetaMask for transaction confirmation.`;
+                
+                const confirmPurchase = confirm(confirmationMessage);
+                
+                if (!confirmPurchase) {
+                    return;
+                }
+                
+                // Show processing message
+                const purchaseMsg = document.createElement("div");
+                purchaseMsg.id = "processing-message";
+                purchaseMsg.style.position = "fixed";
+                purchaseMsg.style.top = "50%";
+                purchaseMsg.style.left = "50%";
+                purchaseMsg.style.transform = "translate(-50%, -50%)";
+                purchaseMsg.style.background = "rgba(0,0,0,0.8)";
+                purchaseMsg.style.color = "#fff";
+                purchaseMsg.style.padding = "20px";
+                purchaseMsg.style.borderRadius = "10px";
+                purchaseMsg.style.zIndex = "1000";
+                purchaseMsg.style.textAlign = "center";
+                purchaseMsg.innerHTML = `
+                    <div>Please confirm the transaction in MetaMask</div>
+                    <div style="margin-top: 15px;">
+                        <div style="font-size: 14px; margin-bottom: 5px;">Transaction details:</div>
+                        <div>Listing ID: ${id}</div>
+                        <div>Energy Amount: ${energyAmount} Wh</div>
+                        <div>Total Cost: ${parseFloat(formattedCost).toFixed(6)} ETH</div>
+                        <div style="margin-top: 10px;">Transaction in progress...</div>
+                    </div>
+                `;
+                document.body.appendChild(purchaseMsg);
+                
+                try {
+                    // Get initial balances for both buyer and seller
+                    const initialBuyerBalance = await contract.getUserBalance(currentAccount);
+                    const initialSellerBalance = await contract.getUserBalance(seller);
+                    
+                    // Execute transaction - this will open MetaMask
+                    const tx = await contract.buyEnergy(id, energyAmount);
+                    
+                    // Update processing message while waiting for confirmation
+                    purchaseMsg.innerHTML = `
+                        <div>Transaction submitted!</div>
+                        <div style="margin-top: 15px;">
+                            <div>Waiting for blockchain confirmation...</div>
+                            <div style="margin-top: 10px; font-size: 12px;">Transaction hash: ${tx.hash.substring(0, 22)}...${tx.hash.substring(62)}</div>
+                            <div style="margin-top: 10px;">Please wait, this may take a few moments.</div>
+                        </div>
+                    `;
+                    
+                    // Wait for transaction to be mined
+                    await tx.wait();
+                    
+                    // Get updated listing to see remaining energy
+                    const updatedListing = await contract.energyListings(id);
+                    
+                    // Get updated balances
+                    const finalBuyerBalance = await contract.getUserBalance(currentAccount);
+                    const finalSellerBalance = await contract.getUserBalance(seller);
+                    
+                    // Calculate actual amounts transferred
+                    const buyerDecrease = ethers.utils.formatEther(initialBuyerBalance.sub(finalBuyerBalance));
+                    const sellerIncrease = ethers.utils.formatEther(finalSellerBalance.sub(initialSellerBalance));
+                    
+                    // Update user's purchased energy amount
+                    userEnergy += energyAmount;
+                    document.getElementById("buyer-energy").innerText = userEnergy;
+                    
+                    // Show visual indication of balance change
+                    showBalanceChange(parseFloat(buyerDecrease).toFixed(6), false);
+                    
+                    // Create and show balance transfer summary
+                    const transferSummary = document.createElement("div");
+                    transferSummary.id = "transfer-summary";
+                    transferSummary.style.position = "fixed";
+                    transferSummary.style.top = "50%";
+                    transferSummary.style.left = "50%";
+                    transferSummary.style.transform = "translate(-50%, -50%)";
+                    transferSummary.style.background = "white";
+                    transferSummary.style.color = "#333";
+                    transferSummary.style.padding = "25px";
+                    transferSummary.style.borderRadius = "10px";
+                    transferSummary.style.zIndex = "1000";
+                    transferSummary.style.textAlign = "center";
+                    transferSummary.style.boxShadow = "0 5px 30px rgba(0,0,0,0.3)";
+                    transferSummary.style.minWidth = "350px";
+                    transferSummary.style.maxWidth = "90%";
+                    
+                    transferSummary.innerHTML = `
+                        <h3 style="color: var(--primary); margin-top: 0;">Purchase Complete</h3>
+                        <div style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 5px; text-align: left;">
+                            <p><strong>Listing ID:</strong> ${id}</p>
+                            <p><strong>Energy Purchased:</strong> ${energyAmount} Wh</p>
+                            <p><strong>Remaining Energy:</strong> ${updatedListing.energyAmountWh} Wh</p>
+                            <p><strong>Total Cost:</strong> ${parseFloat(formattedCost).toFixed(6)} ETH</p>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 20px; text-align: center;">
+                            <div style="flex: 1; padding: 10px; border-right: 1px solid #eee;">
+                                <p><strong>Buyer Account</strong></p>
+                                <p style="color: #e74c3c; font-weight: bold; font-size: 18px;">-${parseFloat(buyerDecrease).toFixed(6)} ETH</p>
+                                <p>New balance: ${parseFloat(ethers.utils.formatEther(finalBuyerBalance)).toFixed(6)} ETH</p>
+                                <p>Energy Purchased: ${userEnergy} Wh</p>
+                            </div>
+                            <div style="flex: 1; padding: 10px;">
+                                <p><strong>Seller Account</strong></p>
+                                <p style="color: #2ecc71; font-weight: bold; font-size: 18px;">+${parseFloat(sellerIncrease).toFixed(6)} ETH</p>
+                                <p>New balance: ${parseFloat(ethers.utils.formatEther(finalSellerBalance)).toFixed(6)} ETH</p>
+                            </div>
+                        </div>
+                        <button onclick="closeTransferSummary()" style="background-color: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">Close</button>
+                    `;
+                    
+                    // Remove processing message
+                    document.body.removeChild(purchaseMsg);
+                    
+                    // Add transfer summary to body
+                    document.body.appendChild(transferSummary);
+                    
+                    // If this purchase used all available energy, remove the listing from all views
+                    if (updatedListing.energyAmountWh.toString() === "0") {
+                        // Remove from buyer view
+                        const buyerListingElement = document.getElementById(`listing-${id}`);
+                        if (buyerListingElement) {
+                            buyerListingElement.remove();
+                        }
+                        
+                        // Remove from seller's own listings view
+                        const sellerListingElement = document.getElementById(`my-listing-${id}`);
+                        if (sellerListingElement) {
+                            sellerListingElement.remove();
+                        }
+                        
+                        // Remove from all listings view in seller interface
+                        const allListingElement = document.getElementById(`all-listing-${id}`);
+                        if (allListingElement) {
+                            allListingElement.remove();
+                        }
+                        
+                        // Mark as sold out in local storage
+                        localStorage.setItem(`listing-${id}-sold-out`, "true");
+                    } else {
+                        // This was a partial purchase, update the listing display in all views
+                        updateListingDisplayAfterPartialPurchase(id, updatedListing);
+                    }
+                    
+                } catch (err) {
+                    // Remove processing message if MetaMask transaction is rejected
+                    if (document.getElementById("processing-message")) {
+                        document.body.removeChild(purchaseMsg);
+                    }
+                    throw err;
+                }
+                
+                // Update UI
+                fetchBalance();
+                
+            } catch (error) {
+                console.error("Error buying energy:", error);
+                
+                // Remove processing message if it still exists
+                const processingMsg = document.getElementById("processing-message");
+                if (processingMsg) {
+                    document.body.removeChild(processingMsg);
+                }
+                
+                if (error.code === 4001) {
+                    // MetaMask transaction rejected by user
+                    alert("Transaction cancelled: You rejected the transaction in MetaMask.");
+                } else {
+                    alert("Failed to buy energy: " + (error.message || "Unknown error occurred"));
+                }
+            }
+        }
+        
+        async function claimTestETH() {
+            try {
+                const tx = await contract.claimTestETH();
+                await tx.wait();
+                alert("Test ETH claimed successfully! You now have 1 ETH in your account.");
+                fetchBalance();
+            } catch (error) {
+                console.error("Error claiming test ETH:", error);
+                alert("Failed to claim test ETH: " + error.message);
+            }
+        }
+
+        function showSellerSide() {
+            if (userRole !== 'seller') {
+                userRole = 'seller';
+                document.getElementById("role-display").innerText = "Seller";
+                document.getElementById("role-display").style.color = "#17a2b8";
+                document.getElementById("switch-role-btn").textContent = "Switch to Buyer Role";
+            }
+            
+            document.getElementById("seller-section").style.display = "block";
+            document.getElementById("buyer-section").style.display = "none";
+            updateActivePanel();
+            fetchListings();
+        }
+
+        function showBuyerSide() {
+            if (userRole !== 'buyer') {
+                userRole = 'buyer';
+                document.getElementById("role-display").innerText = "Buyer";
+                document.getElementById("role-display").style.color = "#dc3545";
+                document.getElementById("switch-role-btn").textContent = "Switch to Seller Role";
+            }
+            
+            document.getElementById("seller-section").style.display = "none";
+            document.getElementById("buyer-section").style.display = "block";
+            updateActivePanel();
+            fetchListings();
+        }
+        
+        function formatAddress(address) {
+            return `${address.substring(0, 6)}...${address.substring(38)}`;
+        }
+
+        // Add new function to update cost estimate based on amount
+        function updateCostEstimate(listingId, pricePerWhWei) {
+            const amountInput = document.getElementById(`energy-amount-${listingId}`);
+            const costEstimateElement = document.getElementById(`cost-estimate-${listingId}`);
+            
+            if (!amountInput || !costEstimateElement) return;
+            
+            const amount = parseInt(amountInput.value);
+            if (isNaN(amount) || amount <= 0) {
+                costEstimateElement.innerText = "0.000000";
+                return;
+            }
+            
+            // Calculate total cost
+            const totalCostWei = ethers.BigNumber.from(pricePerWhWei).mul(amount);
+            const totalCostEth = ethers.utils.formatEther(totalCostWei);
+            
+            costEstimateElement.innerText = parseFloat(totalCostEth).toFixed(6);
+        }
+
+        // Update the updatePrice function
+        async function updatePrice(listingId) {
+            if (userRole !== 'seller') {
+                alert("Only sellers can update prices");
+                return;
+            }
+            
+            const newPriceInput = document.getElementById(`new-price-${listingId}`);
+            if (!newPriceInput) {
+                alert("Error: Could not find price input");
+                return;
+            }
+            
+            const newPrice = parseInt(newPriceInput.value);
+            if (isNaN(newPrice) || newPrice <= 0) {
+                alert("Please enter a valid price");
+                return;
+            }
+            
+            try {
+                const tx = await contract.updatePrice(listingId, newPrice);
+                await tx.wait();
+                alert("Price updated successfully!");
+                newPriceInput.value = "";
+                fetchListings();
+            } catch (error) {
+                console.error("Error updating price:", error);
+                alert("Failed to update price: " + error.message);
+            }
+        }
+
+        // Add a new function to calculate cost with the Enter button
+        async function calculateCost(id) {
+            const amountInput = document.getElementById(`energy-amount-${id}`);
+            if (!amountInput) {
+                alert("Error: Could not find amount input");
+                return;
+            }
+            
+            const energyAmount = parseInt(amountInput.value);
+            if (isNaN(energyAmount) || energyAmount <= 0) {
+                alert("Please enter a valid energy amount");
+                return;
+            }
+            
+            try {
+                const listing = await contract.energyListings(id);
+                
+                if (energyAmount > listing.energyAmountWh) {
+                    alert(`You cannot buy more than the available amount (${listing.energyAmountWh} Wh)`);
+                    amountInput.value = listing.energyAmountWh;
+                    updateCostEstimate(id, listing.pricePerWhWei);
+                    return;
+                }
+                
+                updateCostEstimate(id, listing.pricePerWhWei);
+                
+                alert(`Cost calculation complete!\nEnergy Amount: ${energyAmount} Wh\nEstimated Cost: ${document.getElementById(`cost-estimate-${id}`).innerText} ETH`);
+            } catch (error) {
+                console.error("Error calculating cost:", error);
+                alert("Failed to calculate cost: " + error.message);
+            }
+        }
+
+        // Function to show balance change
+        function showBalanceChange(amount, isIncrease) {
+            const balanceChangeEl = document.getElementById("balance-change");
+            balanceChangeEl.textContent = isIncrease ? `+${parseFloat(amount).toFixed(6)} ETH` : `-${parseFloat(amount).toFixed(6)} ETH`;
+            balanceChangeEl.className = `balance-change ${isIncrease ? 'balance-increase' : 'balance-decrease'}`;
+            balanceChangeEl.style.display = 'inline-block';
+            
+            // Clear the animation after it completes
+            setTimeout(() => {
+                balanceChangeEl.style.display = 'none';
+            }, 3000);
+        }
+
+        // Function to close transfer summary modal
+        function closeTransferSummary() {
+            const summary = document.getElementById("transfer-summary");
+            if (summary) {
+                document.body.removeChild(summary);
+            }
+        }
+
+        // Clear all listing timers when reloading listings
+        function clearListingTimers() {
+            for (const timerId in listingTimers) {
+                clearInterval(listingTimers[timerId]);
+            }
+            listingTimers = {};
+        }
+
+        // Format timestamp to readable date/time
+        function formatTimestamp(timestamp) {
+            return new Date(timestamp * 1000).toLocaleString();
+        }
+
+        // Calculate time remaining and return formatted string
+        function formatTimeRemaining(expiryTimestamp) {
+            const now = Math.floor(Date.now() / 1000);
+            const timeRemaining = expiryTimestamp - now;
+            
+            if (timeRemaining <= 0) {
+                return "Expired";
+            }
+            
+            const hours = Math.floor(timeRemaining / 3600);
+            const minutes = Math.floor((timeRemaining % 3600) / 60);
+            const seconds = timeRemaining % 60;
+            
+            if (hours > 0) {
+                return `${hours}h ${minutes}m remaining`;
+            } else if (minutes > 0) {
+                return `${minutes}m ${seconds}s remaining`;
+            } else {
+                return `${seconds}s remaining`;
+            }
+        }
+
+        // Check if a listing is expired
+        function isExpired(expiryTimestamp) {
+            const now = Math.floor(Date.now() / 1000);
+            return expiryTimestamp <= now;
+        }
+
+        // Set up timer to update the expiry time display
+        function setupExpiryTimer(listingId, expiryTimestamp, isSellerView = false, viewType = "") {
+            // Clear any existing timer for this listing
+            if (listingTimers[listingId]) {
+                clearInterval(listingTimers[listingId]);
+            }
+            
+            // Create a new timer that updates every second
+            let elementId = `expiry-time-${listingId}`;
+            if (isSellerView) {
+                elementId = `my-expiry-time-${listingId}`;
+            } else if (viewType === "all") {
+                elementId = `all-expiry-time-${listingId}`;
+            }
+            
+            const timerElement = document.getElementById(elementId);
+            if (!timerElement) return;
+            
+            const updateTimer = () => {
+                const timeRemainingText = formatTimeRemaining(expiryTimestamp);
+                timerElement.textContent = timeRemainingText;
+                
+                // Add expiring-soon class if less than 1 hour remaining
+                const now = Math.floor(Date.now() / 1000);
+                const timeRemaining = expiryTimestamp - now;
+                
+                if (timeRemaining <= 0) {
+                    // Mark listing as expired
+                    let listingDivId = `listing-${listingId}`;
+                    if (isSellerView) {
+                        listingDivId = `my-listing-${listingId}`;
+                    } else if (viewType === "all") {
+                        listingDivId = `all-listing-${listingId}`;
+                    }
+                    
+                    const listingDiv = document.getElementById(listingDivId);
+                    if (listingDiv) {
+                        listingDiv.classList.add('expired-listing');
+                        // Disable buy button if it exists
+                        const buyButton = listingDiv.querySelector('.buy-button');
+                        if (buyButton) {
+                            buyButton.disabled = true;
+                            buyButton.textContent = 'Listing Expired';
+                        }
+                    }
+                    clearInterval(listingTimers[listingId]);
+                } else if (timeRemaining <= 3600) {
+                    timerElement.classList.add('expiring-soon');
+                }
+            };
+            
+            // Update immediately and then every second
+            updateTimer();
+            listingTimers[listingId] = setInterval(updateTimer, 1000);
+        }
+
+        // Add new function to update all instances of a listing after partial purchase
+        function updateListingDisplayAfterPartialPurchase(listingId, updatedListing) {
+            // Calculate new total cost/value
+            const newTotalCost = ethers.utils.formatEther(
+                updatedListing.pricePerWhWei.mul(updatedListing.energyAmountWh)
+            );
+            
+            // Update in buyer view
+            updateListingInView(`listing-${listingId}`, updatedListing, newTotalCost);
+            
+            // Update in seller's own listings
+            updateListingInView(`my-listing-${listingId}`, updatedListing, newTotalCost, true);
+            
+            // Update in all listings view
+            updateListingInView(`all-listing-${listingId}`, updatedListing, newTotalCost, false, true);
+        }
+
+        // Helper function to update a listing in a specific view
+        function updateListingInView(elementId, listing, totalCost, isSellerView = false, isAllView = false) {
+            const listingElement = document.getElementById(elementId);
+            if (!listingElement) return;
+            
+            // Update energy amount
+            const energySelector = isSellerView ? 'p:nth-child(2)' : 'p:nth-child(3)';
+            const energyLabel = isSellerView ? 'Energy Amount' : 'Available Energy';
+            const energyDisplay = listingElement.querySelector(energySelector);
+            if (energyDisplay) {
+                energyDisplay.innerHTML = `<strong>${energyLabel}:</strong> ${listing.energyAmountWh} Wh`;
+            }
+            
+            // Update total cost/value
+            const costSelector = isSellerView ? 'p:nth-child(4)' : 'p:nth-child(5)';
+            const costLabel = isSellerView ? 'Total Value' : 'Total Cost (all)';
+            const costDisplay = listingElement.querySelector(costSelector);
+            if (costDisplay) {
+                costDisplay.innerHTML = `<strong>${costLabel}:</strong> ${parseFloat(totalCost).toFixed(6)} ETH`;
+            }
+            
+            // Update input field and cost estimate if not in all view
+            if (!isAllView) {
+                const amountInput = listingElement.querySelector(`input#energy-amount-${listing.id}`);
+                if (amountInput) {
+                    amountInput.max = listing.energyAmountWh;
+                    amountInput.value = listing.energyAmountWh;
+                }
+                
+                // Update cost estimate
+                if (!isSellerView) {
+                    updateCostEstimate(listing.id, listing.pricePerWhWei);
+                }
+            }
+            
+            // Add highlighting effect
+            listingElement.classList.add('refreshed-listing');
+            setTimeout(() => {
+                listingElement.classList.remove('refreshed-listing');
+            }, 2000);
+        }
+
+        // Connect wallet on page load
+        connectWallet();
+    </script>
+</body>
+</html> 
